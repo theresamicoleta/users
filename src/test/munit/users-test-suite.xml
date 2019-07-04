@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="users-test-suite.xml" />
+	<munit:test name="users-test-suite-get:\getUsers:users-configTest" description="Test" doc:id="81cf0ade-7c96-4c9c-9530-35ec1c2bbe83" >
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to get:\getUsers:users-config" doc:id="0025c5ab-1303-4f71-bf55-b56bcc4cbd0a" name="get:\getUsers:users-config"/>
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:assert-that doc:name="Assert that" doc:id="ed8b8bba-4f8d-4d02-9e8d-ee2609623586" expression="#[payload]" is="#[MunitTools::notNullValue()]" message="lol"/>
+		</munit:validation>
+	</munit:test>
+
+
+</mule>

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="a267857a-32e0-4b41-932d-35a76bb19467" >
+		<db:generic-connection url="jdbc:postgresql://${db.host}:${db.port}/${db.database}?user=${db.user}&amp;password=${db.password}" driverClassName="org.postgresql.Driver"/>
+	</db:config>
+	<configuration-properties doc:name="Configuration properties" doc:id="c8589218-0d33-48db-8489-67ea21f3a5bf" file="mule-app.properties" />
+	<sub-flow name="sf_getUsers" doc:id="9dc4a0e4-7d37-451e-b8ef-5054414df85c" >
+		<logger level="INFO" doc:name="Start DB Call" doc:id="e5657247-4d84-4a3e-8c19-3cf5698b7578" message="Processing Select All Users Query"/>
+		<db:select doc:name="Select All Users" doc:id="f32017d2-98f7-4924-b910-781839455422" config-ref="Database_Config">
+			<db:sql >SELECT a.&quot;id&quot; AS &quot;AccountId&quot;, a.&quot;userId&quot; AS &quot;AccountUserId&quot;, a.&quot;active&quot;, a.&quot;date_registered&quot;,
+b.&quot;id&quot; AS &quot;UserDetailsId&quot;, b.&quot;userId&quot; AS &quot;UserDetailsUserId&quot;, b.&quot;Username&quot;, b.&quot;FullName&quot;, b.&quot;Birthday&quot;, b.&quot;Gender&quot;
+FROM &quot;Account&quot; AS a, &quot;UserDetails&quot; AS b
+WHERE a.&quot;userId&quot; = b.&quot;userId&quot;
+AND a.&quot;active&quot; = true</db:sql>
+		</db:select>
+		<logger level="INFO" doc:name="End DB Call" doc:id="b1b260d5-bf87-4fc3-91d9-1762875e28bd" message="Select All Users Query Completed" />
+		<choice doc:name="Check Payload Size" doc:id="d8db89f4-908f-4c4e-8afc-06480c667434" >
+			<when expression="#[sizeOf(payload) &gt; 0]">
+				<ee:transform doc:name="Transform Message" doc:id="c5f9fe92-6f1a-4b8a-ab5b-51f800484d88">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+Users: payload map {
+	username:$.Username,
+	fullname:$.Fullname,
+	age:(now() as String {format: "yyyy-MM-dd"} - $.Birthday as String).years,
+	gender: if ($.Gender == "M") "Male" else "Female",
+	dateRegistered:$.date_registered as String {format: "dd-MM-yyyy"}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<logger level="INFO" doc:name="Success" doc:id="e72ee82b-1087-4057-937a-1179385db61c" message="Users Successfully Retrieved"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Error 500" doc:id="92ccdc54-f576-470b-a070-d103effbb4ca" message="System Error"/>
+				<set-variable value="500" doc:name="httpStatus" doc:id="a821a889-85c6-4dff-89a6-8c06fa5cf729" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="c6603f25-5734-46f1-807c-8a252cebf437">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message":"system error",
+	"errorCode":500	
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="sf_getUserByUsername" doc:id="582813e6-8cb1-4df1-b624-9b50de5b31f8" >
+		<logger level="INFO" doc:name="Start DB Call" doc:id="98879412-911a-4fb7-98b1-ecd5ad2b48b7" message="Processing Select User by Username Query"/>
+		<db:select doc:name="User by Username" doc:id="3a04dfd0-08a8-4d7d-a973-3f2b1e914630" config-ref="Database_Config">
+			<db:sql >SELECT a.&quot;id&quot; AS &quot;AccountId&quot;, a.&quot;userId&quot; AS &quot;AccountUserId&quot;, a.&quot;active&quot;, a.&quot;date_registered&quot;,
+b.&quot;id&quot; AS &quot;UserDetailsId&quot;, b.&quot;userId&quot; AS &quot;UserDetailsUserId&quot;, b.&quot;Username&quot;, b.&quot;FullName&quot;, b.&quot;Birthday&quot;, b.&quot;Gender&quot;
+FROM &quot;Account&quot; AS a, &quot;UserDetails&quot; AS b
+WHERE a.&quot;userId&quot; = b.&quot;userId&quot;
+AND b.&quot;Username&quot; = :username
+AND a.&quot;active&quot; = true</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'username': attributes.uriParams.username
+}]]]></db:input-parameters>
+		</db:select>
+		<logger level="INFO" doc:name="End DB Call" doc:id="6943864a-4082-41f5-a3db-56e98cf08a25" message="Select User by Username Query Completed" />
+		<choice doc:name="Check Payload Size" doc:id="5f5704b9-4d10-471e-a413-8153c91a95df" >
+			<when expression="#[sizeOf(payload) &gt; 0]">
+				<ee:transform doc:name="Transform Message" doc:id="5f4866c8-aa9e-40a6-b5ec-97c3a5f175fa">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map {
+	username: $.Username,
+	fullname: $.Fullname,
+	age: (now() as String {format: "yyyy-MM-dd"} - $.Birthday as String).years,
+	gender: if ($.Gender == "M") "Male" else "Female",
+	dateRegistered: $.date_registered as String {format: "dd-MM-yyyy"}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<logger level="INFO" doc:name="Success" doc:id="e89110b9-0281-41d4-a213-ee7d8beb77e2" message="User Successfully Retrieved"/>
+			</when>
+			<when expression="#[sizeOf(payload) == 0]">
+				<logger level="INFO" doc:name="Error 404" doc:id="57935762-28b4-4eac-956b-cadb3d38c96b" message="User Not Found" />
+				<set-variable value="404" doc:name="httpStatus" doc:id="20487ac0-0097-411b-82eb-96de264ac8e6" variableName="httpStatus" />
+				<ee:transform doc:name="Transform Message" doc:id="343f7395-f48d-49b4-b91b-b4f94a562c08">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message":"user not found",
+	"errorCode":404	
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Error 500" doc:id="78c411a7-3869-4da8-b7c3-9ac9d0525da4" message="System Error"/>
+				<set-variable value="500" doc:name="httpStatus" doc:id="afa69642-e629-4bd6-9981-1a7aa549793c" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="9fece31d-5cee-4dbc-806a-cd57c9e63591" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message":"system error",
+	"errorCode":500	
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>

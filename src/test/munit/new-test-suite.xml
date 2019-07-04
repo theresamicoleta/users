@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="new-test-suite.xml" />
+	<munit:test name="500-test-header" description="Test" doc:id="3ee87eda-c156-473d-b758-918dbd6230c3" >
+		<munit:execution >
+			<munit:set-event doc:name="Set Event" doc:id="1ca42960-3ae7-44cf-b2f9-9f5c833b3805" >
+				<munit:attributes value="#[{headers : {'token' : 'abcdefg'}}]" />
+			</munit:set-event>
+			<flow-ref doc:name="users-main" doc:id="3e6552de-bfa6-4966-b207-348f46addfd7" name="users-main"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-that doc:name="Assert that" doc:id="a57590c9-83d4-4b27-95d8-9a049156ac98" expression="#[payload]" is='#[MunitTools::equalTo({
+	"message":"system error",
+	"errorCode":500	
+})]' message="Payload is not equal"/>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="200-test-get-all-users" description="Test" doc:id="23c9d7ec-34a3-488e-bc22-21afddad6dde">
+		<munit:execution >
+			<flow-ref doc:name="get:\getUsers:users-config" doc:id="aa66074f-b78b-41ba-8df4-40396ac2f5cb" name="get:\getUsers:users-config"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-that doc:name="Assert that" doc:id="ba65869c-f52c-4c87-8cd4-3fe9e192bd79" expression="#[payload]" is='#[MunitTools::equalTo({
+    "Users": [
+        {
+            "username": "john123",
+            "fullname": "John White Smith",
+            "age": 23,
+            "gender": "Male",
+            "dateRegistered": "20-08-2012"
+        },
+        {
+            "username": "jackpeters",
+            "fullname": "Jack Peters",
+            "age": 25,
+            "gender": "Male",
+            "dateRegistered": "25-09-2014"
+        },
+        {
+            "username": "jenniesummers",
+            "fullname": "Jennie Summers",
+            "age": 24,
+            "gender": "Female",
+            "dateRegistered": "20-08-2013"
+        }
+    ]
+})]' message="Payload is not equal"/>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="500-test-get-all-users" description="MUnit Test" doc:id="3c8b51b3-f049-4a7f-8a52-bc9f43184da6" ignore="true">
+		<munit:execution >
+			<munit:set-event doc:name="Set Event" doc:id="a82f3f2a-6785-4f0e-bc2e-1bcf5c57a8c7" >
+				<munit:variables >
+					<munit:variable key="db.port" value="1234" />
+				</munit:variables>
+			</munit:set-event>
+			<flow-ref doc:name="get:\getUsers:users-config" doc:id="36855ebd-a809-4a0c-9d4b-7ed8a10913c6" name="get:\getUsers:users-config"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-that doc:name="Assert that" doc:id="7f0b0bc3-e111-44ee-bb9f-784302b4b3ce" expression="#[payload]" is='#[MunitTools::equalTo({
+	"message":"system error",
+	"errorCode":500	
+})]' message="Payload is not equal"/>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="200-test-get-user-by-username" description="Test" doc:id="7bcf8fa0-90ae-411d-a26b-b59c31e910ef">
+		<munit:execution>
+			<munit:set-event doc:name="Active User" doc:id="d4607299-3a55-419a-9acf-e4d5b9d0c4ba">
+				<munit:attributes value="#[{uriParams : {'username' : 'john123'}}]" />
+			</munit:set-event>
+			<flow-ref doc:name="get:\getUser\(username):users-config" doc:id="e7c6c490-52a4-4044-a8e0-2f03ea435739" name="get:\getUser\(username):users-config" />
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:assert-that doc:name="Assert that" doc:id="6c0ecced-1c37-413e-8f0d-3ae84a0ab109" expression="#[payload]" is='#[MunitTools::equalTo([{
+            "username": "john123",
+            "fullname": "John White Smith",
+            "age": 23,
+            "gender": "Male",
+            "dateRegistered": "20-08-2012"
+        }])]' message="Payload is not equal" />
+		</munit:validation>
+	</munit:test>
+	<munit:test name="404-test-get-user-by-username" description="MUnit Test" doc:id="19b2a704-cfe4-47f4-a7a8-cac49979d7b8" >
+		<munit:execution >
+			<munit:set-event doc:name="Inactive User" doc:id="b4ac2baf-03f6-4911-bba2-9862f4a7b060" >
+				<munit:attributes value="#[{uriParams : {'username' : 'theresa00'}}]" />
+			</munit:set-event>
+			<flow-ref doc:name="get:\getUser\(username):users-config" doc:id="645d4bef-2131-40a0-b87d-2c3331885ed5" name="get:\getUser\(username):users-config"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-that doc:name="Assert that" doc:id="d3c322cf-5442-476a-9b5e-8c660a4b351c" expression="#[payload]" is='#[MunitTools::equalTo({
+	"message":"user not found",
+	"errorCode":404	
+})]' message="Payload is not equal"/>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="500-test-get-user-by-username" description="MUnit Test" doc:id="5daa164e-d5b7-4fb7-880a-ba3f8e64333e" ignore="true">
+		<munit:execution >
+			<munit:set-event doc:name="Set Event" doc:id="9065fb01-ae11-430f-baeb-f4ed76895b9f" >
+				<munit:variables >
+					<munit:variable key="db.port" value="1234" />
+				</munit:variables>
+			</munit:set-event>
+			<flow-ref doc:name="get:\getUser\(username):users-config" doc:id="79e24361-035e-4c0e-b01b-d0e845918b6c" name="get:\getUser\(username):users-config"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-that doc:name="Assert that" doc:id="38cd3e0a-3ef4-4639-8b32-c6cb0c2daa84" expression="#[payload]" is='#[MunitTools::equalTo({
+	"message":"system error",
+	"errorCode":500	
+})]' message="Payload is not equal"/>
+		</munit:validation>
+	</munit:test>
+
+
+</mule>
